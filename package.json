@@ -1,0 +1,11 @@
+{
+  "name": "SirupScraper",
+  "version": "1.0.0",
+  "description": "Untuk web scraping ke web sirup",
+  "main": "index.js",
+  "author": "yan friskantoni",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^13.5.1"
+  }
+}
