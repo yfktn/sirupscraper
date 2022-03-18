@@ -7,15 +7,15 @@ if(!url) {
 }
 
 async function run(halamanUtama) {
-    const browser = await puppeteer.launch({headless: true});
+    const browser = await puppeteer.launch({headless: false});
     const page = await browser.newPage();
 
-    await page.goto(halamanUtama, {waitUntil: 'networkidle2'});
+    await page.goto(halamanUtama, {waitUntil: ['networkidle2', 'domcontentloaded']});
 
     page.on('console', (msg) => console.log('PAGE_LOG:', msg.text()));
 
     let keepCrawling = true, 
-        maxPage = 200, 
+        maxPage = 999, 
         currentPage = 1, 
         delay = 1500;
     let allData = [];
@@ -41,7 +41,8 @@ async function run(halamanUtama) {
                 const idrup = columns[0].querySelector("a.btn-detail").getAttribute('data-id'),
                     modalid = 'modal-' + idrup,
                     modalDataDetail = document.getElementById(modalid), // ambil data dari modal yang menjadi detailnya
-                    tableData = modalDataDetail.getElementsByTagName('table'); // ini adalah table nya yang menjadi tempat tampil
+                    tableData = modalDataDetail.getElementsByTagName('table'), // ini adalah table nya yang menjadi tempat tampil
+                    pagu = columns[2].querySelector("div.ui.label").innerText.trim();
 
                 // baru untuk masing-masing dt
                 return {
@@ -52,7 +53,8 @@ async function run(halamanUtama) {
                     klpd: columns[1].querySelector("div.ui.list.hidden-md-down > div:nth-child(1)").innerText.trim(),
                     satker: columns[1].querySelector("div.ui.list.hidden-md-down > div:nth-child(2)").innerText.trim(),
                     lokasi: columns[1].querySelector("div.ui.list.hidden-md-down > div:nth-child(3)").innerText.trim(),
-                    pagu: columns[2].querySelector("div.ui.label").innerText.trim(),
+                    pagu: pagu,
+                    pagu_nilai: pagu.replace(/[^0-9,]/g, ''),
                     // tahun_anggaran: columns[2].querySelector("div:nth-child(1)").innerText.trim(),
                     // detail harus mengambil dari isi dialog
                     kegiatan: tableData[0].querySelector('tbody > tr:nth-child(2) > td:nth-child(2)').innerText.trim(),
@@ -91,7 +93,7 @@ async function run(halamanUtama) {
     }
     // console.log(data);
     await fs.writeFile('hasilBaca.db', JSON.stringify(allData));
-    browser.close();
+    // browser.close();
 }
 
 run(url);
