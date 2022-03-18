@@ -7,13 +7,15 @@ if(!url) {
 }
 
 async function run(halamanUtama) {
-    const browser = await puppeteer.launch({headless: false});
+    const browser = await puppeteer.launch({headless: true});
     const page = await browser.newPage();
 
-    await page.goto(halamanUtama);
+    await page.goto(halamanUtama, {waitUntil: 'networkidle2'});
+
+    page.on('console', (msg) => console.log('PAGE_LOG:', msg.text()));
 
     let keepCrawling = true, 
-        maxPage = 4, 
+        maxPage = 200, 
         currentPage = 1, 
         delay = 1500;
     let allData = [];
@@ -21,7 +23,8 @@ async function run(halamanUtama) {
     while( keepCrawling && currentPage <= maxPage ) {
         try {
             // tunggu sampai kelihatan tombol untuk nextnya!
-            await page.waitForSelector("#rup > div.pusher > div > section > div.ui.container > div > a");
+            await page.waitForSelector(".section-rup div.ui.menu.two.item a")
+                .then(() => console.log(currentPage)); // supaya ada progress berikan pesan!
         } catch (error) {
             keepCrawling = false;
         }
@@ -29,6 +32,7 @@ async function run(halamanUtama) {
         const data = await page.evaluate(() => {
             // dapatkan baris array untuk table nya
             const rows = Array.from(document.querySelectorAll(".section-rup tbody tr"));
+
             //kemudian 
             return rows.map((row) => {
                 // di sini query lagi untuk td nya
@@ -64,26 +68,30 @@ async function run(halamanUtama) {
         allData = allData.concat(data);
         currentPage++;
         if( keepCrawling ) {
-           await page.waitForTimeout(delay); // lakukan throotle ... 
-           const aa = await page.evaluate(() => {
-               return Array.from(document.querySelectorAll("#rup > div.pusher > div > section > div.ui.container > div > a"))
-           });
-           console.debug(currentPage, aa);
-           if(aa.length == 1 && aa[0].innerText.trim().toLowerCase().search('berikutnya') > -1) {
-               // ini baru di halaman pertama
-               await aa[0].click();
-           } else if(aa.length == 2 && aa[0].innerText.trim().toLowerCase().search('berikutnya') > -1) {
-               await aa[1].click();
-           } else {
-               keepCrawling = false;
-           }
-
+            page.waitForTimeout(delay);
+            
+            // ambil semua link pengaturan halamannya
+            const nextPrevButtonsLength = await page.$$eval('.section-rup div.ui.menu.two.item a', (links) => links.length);
+            if(nextPrevButtonsLength == 1) {
+                // apakah aktif untuk berikutnya?
+                const nextPrevButton = await page.$eval('.section-rup div.ui.menu.two.item a', (link) => link.innerText);
+                if(nextPrevButton.toLowerCase().search("berikutnya") > -1) {
+                    await page.click('.section-rup div.ui.menu.two.item a');
+                } else {
+                    keepCrawling = false; // tidak ada tombol berikutnya
+                }
+            } else if(nextPrevButtonsLength == 2) { // prev and next exist!
+                await page.click('.section-rup div.ui.menu.two.item a:nth-child(2)');
+            } else {
+                console.log("Sudah tidak menemukan tombol berikutnya!");
+                keepCrawling = false;
+            }
         //    await page.click("#rup > div.pusher > div > section > div.ui.container > div > a");
         }
     }
     // console.log(data);
     await fs.writeFile('hasilBaca.db', JSON.stringify(allData));
-    // browser.close();
+    browser.close();
 }
 
 run(url);
