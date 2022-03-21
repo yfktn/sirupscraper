@@ -33,10 +33,7 @@ async function run(halamanUtama) {
 
     page.on('console', (msg) => console.log('PAGE_LOG:', msg.text()));
 
-    await page.screenshot({
-        path: 'fullsirup.lkpp.go.id.png',
-        fullPage: true
-    });
+    let keepCrawling = true
 
     await browser.close();
 }
