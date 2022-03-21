@@ -6,6 +6,10 @@ if(!url) {
     throw "URL untuk mendapatkan halaman awal SiRUP swakelola dari sirup.lkpp.go.id belum ditentukan!";
 }
 
+async function waitForAjaxTableRendered(page, tableMaxCnt = 100) {
+    // next
+}
+
 async function waitForProcessFinished(page) {
     return page.waitForSelector('div#tblLelangLama_processing', {
         visible: false,
@@ -46,7 +50,7 @@ async function run(halamanUtama) {
         maxPage = -1, // -1 for unlimited
         delay = 1500,
         randomStr = (Math.random() + 1).toString(36).substring(7),
-        currentFileName = 'sirup-swakelola-' + randomStr ;
+        currentFileName = 'sirup-penyedia-' + randomStr ;
 
     while(keepCrawling) {
         try {
@@ -68,10 +72,10 @@ async function run(halamanUtama) {
                     satker: columns[1].innerText,
                     nama_paket: columns[2].innerText,
                     pagu: columns[3].innerText.replace(/[^0-9,]/g, ''),
-                    sumber_dana: columns[4].innerText.trim(),
-                    kode_rup: columns[5].innerText.trim(),
-                    waktu_pemilihan: columns[6].innerText.trim(),
-                    kegiatan: columns[7].innerText.trim()
+                    metode: columns[4].innerText,
+                    sumber_dana: columns[5].innerText.trim(),
+                    kode_rup: columns[6].innerText.trim(),
+                    waktu_pemilihan: columns[7].innerText.trim()
                 };
 
             });
