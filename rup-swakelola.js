@@ -1,33 +1,11 @@
 const puppeteer = require('puppeteer');
 const fs = require("fs/promises");
+const waiterAndTool = require("./waiterAndTool");
+const waitTillHTMLRendered = require("./waitTillHTMLRendered");
 
 const url = process.argv[2];
 if(!url) {
     throw "URL untuk mendapatkan halaman awal SiRUP swakelola dari sirup.lkpp.go.id belum ditentukan!";
-}
-
-async function waitForProcessFinished(page) {
-    return page.waitForSelector('div#tblLelangLama_processing', {
-        visible: false,
-    });
-}
-
-async function waitForPagination(page) {
-    return page.waitForSelector('ul.pagination li', {
-        visible: false,
-    });
-}
-
-async function waitForPaginationOke(page, pageToCheck) {
-    return page.waitForFunction("document.querySelector('li.paginate_button.active a').innerText == '" + pageToCheck + "'");
-}
-
-async function clickNextPage(page) {
-    return page.click('li#tblLelangLama_next a');
-}
-
-async function selectItemsCountTo100(page) {
-    return page.select('select.form-control.input-sm', '100')
 }
 
 async function run(halamanUtama) {
@@ -38,8 +16,8 @@ async function run(halamanUtama) {
     await page.goto(halamanUtama, {waitUntil: ['networkidle2', 'domcontentloaded']});
     
     // first page then ... 
-    await waitForProcessFinished(page);
-    await selectItemsCountTo100(page);
+    await waiterAndTool.waitForProcessFinished(page);
+    await waiterAndTool.selectItemsCountTo100(page);
 
     let keepCrawling = true, 
         currentPage = 1,
@@ -50,9 +28,10 @@ async function run(halamanUtama) {
 
     while(keepCrawling) {
         try {
-            await waitForProcessFinished(page);
-            await waitForPagination(page);
-            await waitForPaginationOke(page, currentPage)
+            await waiterAndTool.waitForProcessFinished(page);
+            await waitTillHTMLRendered.waitTillHTMLRendered(page, { querySelector: "div#result" });
+            await waiterAndTool.waitForPagination(page);
+            await waiterAndTool.waitForPaginationOke(page, currentPage)
                 .then(() => console.log(currentPage));
         } catch(error) {
             console.error('Gagal melakukan penelusuran halaman: ' + currentPage + "\n" + error);
@@ -88,7 +67,7 @@ async function run(halamanUtama) {
         } else {
             currentPage++;
             page.waitForTimeout(delay);
-            await clickNextPage(page);
+            await waiterAndTool.clickNextPage(page);
         }
     }
 
